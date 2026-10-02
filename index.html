@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git and Bitbucket: The Working Developer's Guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <h1>Git and Bitbucket</h1>
+  <p>Everything you need to clone, branch, merge, fix conflicts and ship code with a team, without fear.</p>
+  <p><a class="btn" href="labs.html">Start the hands-on labs</a></p>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Chapters">
+  <ol>
+    <li><a href="#model">How Git thinks</a></li>
+    <li><a href="#setup">Setup and SSH</a></li>
+    <li><a href="#repos">Create and clone repos</a></li>
+    <li><a href="#daily">Daily workflow</a></li>
+    <li><a href="#branches">Branches</a></li>
+    <li><a href="#merge">Merging</a></li>
+    <li><a href="#conflicts">Merge conflicts</a></li>
+    <li><a href="#pr">Pull requests</a></li>
+    <li><a href="#rebase">Rebase, cherry-pick</a></li>
+    <li><a href="#undo">Undo mistakes</a></li>
+    <li><a href="#versions">Tags and versioning</a></li>
+    <li><a href="#delete">Deleting repos</a></li>
+    <li><a href="#extras">Extras you will need</a></li>
+    <li><a href="#cheat">Cheat sheet</a></li>
+    <li><a href="#lab">Practice lab</a></li>
+  </ol>
+</nav>
+
+<main>
+<aside class="note info"><b>Golden rules.</b> 1) Never work directly on <code>main</code>. 2) Commit small and often. 3) Pull before you push. 4) Never rewrite history that others have pulled. 5) Never commit secrets (passwords, keys, <code>.env</code>).</aside>
+
+<section id="model" class="c1">
+  <h2>How Git thinks</h2>
+  <p>Your files move through four places. Most commands just move changes from one place to the next.</p>
+  <ol class="flow">
+    <li><b>Working folder</b>files you edit</li>
+    <li><b>Staging area</b><code>git add</code></li>
+    <li><b>Local repo</b><code>git commit</code></li>
+    <li><b>Remote</b><code>git push</code> (Bitbucket)</li>
+  </ol>
+  <p><code>main</code> is the stable branch, <code>HEAD</code> is where you are now, and <code>origin</code> is the nickname of the remote repo.</p>
+</section>
+
+<section id="setup" class="c2">
+  <h2>Setup and SSH</h2>
+  <pre>git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git config --global init.defaultBranch main
+git --version</pre>
+  <p>SSH lets you push without typing a password each time:</p>
+  <pre>ssh-keygen -t ed25519 -C "you@example.com"
+cat ~/.ssh/id_ed25519.pub     # copy this output</pre>
+  <p>In Bitbucket, open your personal settings, find <b>SSH keys</b>, add the key, then test:</p>
+  <pre>ssh -T git@bitbucket.org</pre>
+  <aside class="note tip">Prefer SSH. HTTPS also works, but it needs a token or app password, and Bitbucket's sign-in options change, so check their docs if it asks for credentials.</aside>
+</section>
+
+<section id="repos" class="c3">
+  <h2>Create and clone repos</h2>
+  <h3>Clone an existing repo (most common on a new job)</h3>
+  <pre>git clone git@bitbucket.org:team/project.git
+cd project
+git branch -a          # see all branches</pre>
+  <h3>Create a new repo in Bitbucket</h3>
+  <p>Use the <b>Create</b> button, choose <b>Repository</b>, give it a name, choose private or public, and create it. Menu names can differ slightly.</p>
+  <h3>Start a repo from existing local code</h3>
+  <pre>cd my-project
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin git@bitbucket.org:team/my-project.git
+git push -u origin main</pre>
+  <aside class="note tip">Add a <code>.gitignore</code> before your first commit (see Extras) so <code>node_modules</code> and <code>.env</code> never get in.</aside>
+</section>
+
+<section id="daily" class="c4">
+  <h2>Daily workflow</h2>
+  <pre>git pull                      # get the latest first
+git status                    # what changed?
+git diff                      # see the exact changes
+git add file.js               # stage one file  (git add . stages all)
+git commit -m "Add retry to file upload"
+git push
+git log --oneline --graph     # history at a glance</pre>
+  <aside class="note info"><b>Good commit messages:</b> short, present tense, say what and why. <code>Fix null error in token refresh</code> beats <code>changes</code>.</aside>
+</section>
+
+<section id="branches" class="c5">
+  <h2>Branches</h2>
+  <h3>Create and switch</h3>
+  <pre>git switch -c feature/login-fix        # create and move to it
+git switch main                        # move back
+git branch                             # list local branches
+git push -u origin feature/login-fix   # publish it the first time</pre>
+  <h3>Delete a branch</h3>
+  <pre>git branch -d feature/login-fix              # local, only if merged
+git branch -D feature/login-fix              # local, force (unmerged work is lost)
+git push origin --delete feature/login-fix   # remote</pre>
+  <p><b>Naming:</b> <code>feature/</code>, <code>bugfix/</code>, <code>hotfix/</code>, followed by a short description or ticket ID, such as <code>feature/PROJ-123-export-csv</code>.</p>
+  <aside class="note warn">You cannot delete the branch you are standing on. Switch to <code>main</code> first.</aside>
+</section>
+
+<section id="merge" class="c6">
+  <h2>Merging</h2>
+  <p>Bring your finished branch into <code>main</code>:</p>
+  <pre>git switch main
+git pull
+git merge feature/login-fix
+git push</pre>
+  <ul>
+    <li><b>Fast-forward:</b> main had no new commits, so Git just moves the pointer.</li>
+    <li><b>Merge commit:</b> both sides have changes, so Git adds a commit joining them (<code>--no-ff</code> forces this).</li>
+    <li><b>Squash:</b> <code>git merge --squash branch</code> turns all commits into one, which keeps history tidy.</li>
+  </ul>
+  <pre>git merge --abort     # changed your mind mid-merge</pre>
+</section>
+
+<section id="conflicts" class="c1">
+  <h2>Merge conflicts</h2>
+  <p>A conflict happens when you and a teammate change the same lines. Git stops and asks you to choose. It is normal, not an error.</p>
+  <pre>git pull origin main
+# CONFLICT (content): Merge conflict in app.js</pre>
+  <p>Open the file. Git marks both versions:</p>
+  <pre>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+const limit = 50;          // your version
+=======
+const limit = 100;         // their version
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; main</pre>
+  <ol class="steps">
+    <li>Find the markers (<code>git status</code> lists conflicted files).</li>
+    <li>Edit the file to the final correct code, and delete all three marker lines.</li>
+    <li>Run and test the code.</li>
+    <li><code>git add app.js</code></li>
+    <li><code>git commit</code> (or <code>git merge --continue</code>), then <code>git push</code>.</li>
+  </ol>
+  <aside class="note tip">Stuck? Run <code>git merge --abort</code> to go back to before the merge. If the conflict is in your teammate's logic, message them and fix it together. VS Code has Accept Current / Incoming / Both buttons.</aside>
+  <aside class="note info"><b>Avoid big conflicts:</b> pull from <code>main</code> into your branch every day, keep branches short, and keep commits small.</aside>
+</section>
+
+<section id="pr" class="c2">
+  <h2>Pull requests in Bitbucket</h2>
+  <ol class="steps">
+    <li>Push your branch: <code>git push -u origin feature/login-fix</code></li>
+    <li>In Bitbucket, choose <b>Create pull request</b>. Check that the source is your branch and the destination is <code>main</code> (or <code>develop</code>).</li>
+    <li>Write a clear title and a description: what changed, why, and how to test.</li>
+    <li>Add reviewers and link the Jira ticket if your team uses one.</li>
+    <li>Create the pull request and wait for review.</li>
+    <li>Reviewers comment and approve. Fix comments by committing to the <b>same branch</b>: the pull request updates itself.</li>
+    <li>When approved and checks pass, click <b>Merge</b>. Pick the strategy your team uses (merge commit, squash or fast-forward) and tick <b>Close source branch</b>.</li>
+    <li>Update your machine:
+<pre>git switch main
+git pull
+git branch -d feature/login-fix</pre></li>
+  </ol>
+  <h3>Conflict shown in the pull request?</h3>
+  <pre>git switch feature/login-fix
+git pull origin main         # brings main into your branch
+# fix conflicts, then:
+git add .
+git commit
+git push                     # the pull request refreshes</pre>
+  <aside class="note info">Keep pull requests small (under about 400 changed lines). Small ones get reviewed faster and break less.</aside>
+</section>
+
+<section id="rebase" class="c3">
+  <h2>Rebase and cherry-pick</h2>
+  <pre>git switch feature/login-fix
+git rebase main             # replay your commits on top of latest main
+git push --force-with-lease # needed after a rebase, on YOUR branch only</pre>
+  <aside class="note danger"><b>Never rebase or force-push shared branches</b> like <code>main</code> or <code>develop</code>. It rewrites history other people have pulled.</aside>
+  <p>Cherry-pick copies one commit onto your current branch, which is useful for hotfixes:</p>
+  <pre>git cherry-pick a1b2c3d</pre>
+  <p>If a rebase goes wrong: <code>git rebase --abort</code>.</p>
+</section>
+
+<section id="undo" class="c4">
+  <h2>Undo mistakes</h2>
+  <table>
+    <tr><th>Situation</th><th>Command</th></tr>
+    <tr><td>Discard edits to a file</td><td><code>git restore file.js</code></td></tr>
+    <tr><td>Unstage a file</td><td><code>git restore --staged file.js</code></td></tr>
+    <tr><td>Fix the last commit message or add a forgotten file (not yet pushed)</td><td><code>git commit --amend</code></td></tr>
+    <tr><td>Undo last commit, keep the changes</td><td><code>git reset --soft HEAD~1</code></td></tr>
+    <tr><td>Undo a commit that is already pushed (safe)</td><td><code>git revert a1b2c3d</code></td></tr>
+    <tr><td>Throw away all local changes and commits</td><td><code>git reset --hard origin/main</code></td></tr>
+    <tr><td>Pause work without committing</td><td><code>git stash</code>, later <code>git stash pop</code></td></tr>
+    <tr><td>Lost a commit after a mistake</td><td><code>git reflog</code>, then <code>git switch -c rescue a1b2c3d</code></td></tr>
+  </table>
+  <aside class="note warn"><code>revert</code> adds a new commit that undoes an old one, so it is safe on shared branches. <code>reset --hard</code> deletes work, so use it only when you are sure.</aside>
+</section>
+
+<section id="versions" class="c5">
+  <h2>Tags and versioning</h2>
+  <p>A tag is a permanent label on a commit, usually a release.</p>
+  <pre>git tag -a v1.2.0 -m "Release 1.2.0"
+git push origin v1.2.0        # or: git push --tags
+git tag                       # list tags
+git switch --detach v1.2.0    # look at the code as it was</pre>
+  <p><b>Semantic versioning:</b> <code>MAJOR.MINOR.PATCH</code></p>
+  <ul>
+    <li><b>PATCH</b> (1.2.1): bug fix, nothing breaks.</li>
+    <li><b>MINOR</b> (1.3.0): new feature, still compatible.</li>
+    <li><b>MAJOR</b> (2.0.0): breaking change.</li>
+  </ul>
+  <p><b>Common team flow:</b> <code>feature/*</code> branches merge into <code>develop</code>, <code>develop</code> merges into <code>main</code> for a release (tagged), and urgent fixes use a <code>hotfix/*</code> branch from <code>main</code>. Follow whatever your team uses.</p>
+</section>
+
+<section id="delete" class="c6">
+  <h2>Deleting repositories</h2>
+  <aside class="note danger">Deleting a repo on Bitbucket removes its code, history and pull requests, and usually cannot be undone. Only do it for your own test repos, and only if you have admin rights.</aside>
+  <ul>
+    <li><b>Bitbucket:</b> open the repo, go to <b>Repository settings</b>, find <b>Delete repository</b>, and confirm by typing the name.</li>
+    <li><b>Local copy:</b> a repo is just a folder, so deleting the folder removes only your copy (<code>rm -rf project</code> on Mac/Linux). The remote stays.</li>
+    <li><b>Safer first:</b> clone a backup, or archive or rename the repo, if you are unsure.</li>
+  </ul>
+</section>
+
+<section id="extras" class="c1">
+  <h2>Extras you will need</h2>
+  <h3>fetch vs pull</h3>
+  <p><code>git fetch</code> downloads changes without touching your files. <code>git pull</code> is fetch plus merge. Fetch first when you want to look before you merge.</p>
+  <h3>.gitignore</h3>
+  <pre>node_modules/
+.env
+*.log
+dist/
+.DS_Store</pre>
+  <h3>Secrets committed by mistake</h3>
+  <aside class="note danger">If a password or key reached the remote, <b>rotate it immediately</b> (change it), then ask your team how to clean the history. Deleting the file in a new commit is not enough.</aside>
+  <h3>Find who changed a line, or when a bug started</h3>
+  <pre>git blame app.js
+git log -p -- app.js
+git bisect start    # binary search for the bad commit</pre>
+  <h3>Handy settings</h3>
+  <pre>git config --global pull.rebase false
+git config --global alias.st status
+git config --global alias.lg "log --oneline --graph --all"</pre>
+  <h3>Bitbucket Pipelines</h3>
+  <p>Many teams run tests automatically on every push using a <code>bitbucket-pipelines.yml</code> file in the repo. A failed pipeline blocks the merge, so read the log and fix it before asking for review.</p>
+</section>
+
+<section id="cheat" class="c2">
+  <h2>Cheat sheet</h2>
+  <table>
+    <tr><th>Goal</th><th>Command</th></tr>
+    <tr><td>Get a repo</td><td><code>git clone &lt;url&gt;</code></td></tr>
+    <tr><td>Update my copy</td><td><code>git pull</code></td></tr>
+    <tr><td>New branch</td><td><code>git switch -c feature/name</code></td></tr>
+    <tr><td>Save my work</td><td><code>git add .</code> then <code>git commit -m "msg"</code></td></tr>
+    <tr><td>Publish</td><td><code>git push -u origin feature/name</code></td></tr>
+    <tr><td>Bring in main</td><td><code>git pull origin main</code></td></tr>
+    <tr><td>Merge a branch</td><td><code>git merge branch</code></td></tr>
+    <tr><td>Delete branch</td><td><code>git branch -d name</code> and <code>git push origin --delete name</code></td></tr>
+    <tr><td>Stop a merge</td><td><code>git merge --abort</code></td></tr>
+    <tr><td>Tag a release</td><td><code>git tag -a v1.0.0 -m "msg"</code></td></tr>
+  </table>
+</section>
+
+<section id="lab" class="c3">
+  <h2>Practice lab (about 90 minutes)</h2>
+  <p>Use a throwaway repo, never a real one. Pretend to be two developers by cloning it twice.</p>
+  <ol class="steps">
+    <li>Create a Bitbucket repo named <code>git-practice</code> and clone it twice: <code>dev-a</code> and <code>dev-b</code>.</li>
+    <li>In <code>dev-a</code>, create <code>feature/a</code>, edit line 1 of a file, commit and push.</li>
+    <li>In <code>dev-b</code>, create <code>feature/b</code>, edit the <b>same line</b>, commit and push.</li>
+    <li>Raise a pull request for each branch. Merge A first.</li>
+    <li>Update B with <code>git pull origin main</code>, resolve the conflict, push, and merge B.</li>
+    <li>Tag the result <code>v1.0.0</code>, delete both branches (local and remote).</li>
+    <li>Break something on purpose, then fix it with <code>revert</code>, <code>stash</code> and <code>reflog</code>.</li>
+    <li>Explain the full flow out loud without notes.</li>
+  </ol>
+  <aside class="note tip">When you can do the lab without looking anything up, you are ready for a team repo.</aside>
+</section>
+</main>
+</div>
+<footer>Practice on throwaway repos first. Command menus in Bitbucket can change, so check their docs if a screen looks different.</footer>
+</body>
+</html>

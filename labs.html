@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git and Bitbucket: Hands-on Labs</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="labs.css">
+</head>
+<body>
+<div class="prog"><span id="pc">0 steps done</span><div class="track"><div id="bar"></div></div></div>
+<header class="hero">
+  <h1>Hands-on Labs</h1>
+  <p>Ten labs on a real Bitbucket account. Do them in order, tick each step, and check the result before moving on.</p>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Labs">
+  <ol>
+    <li><a href="#l1">Account and SSH</a></li>
+    <li><a href="#l2">First repo</a></li>
+    <li><a href="#l3">Branches</a></li>
+    <li><a href="#l4">Pull request</a></li>
+    <li><a href="#l5">Merge conflict</a></li>
+    <li><a href="#l6">Conflict in a PR</a></li>
+    <li><a href="#l7">Undo toolkit</a></li>
+    <li><a href="#l8">Versioning</a></li>
+    <li><a href="#l9">Pipelines (CI)</a></li>
+    <li><a href="#l10">Deploy and capstone</a></li>
+    <li><a href="#done">Confidence check</a></li>
+  </ol>
+  <p class="back"><a href="index.html">Back to the guide</a></p>
+</nav>
+
+<main>
+<aside class="note info"><b>Before you start.</b> Replace <code>WORKSPACE</code> in every command with your Bitbucket workspace ID (shown in the URL after you sign in). Use only practice repos. Bitbucket menus and free-plan limits change, so follow the screen if it differs. Windows users: run the commands in Git Bash (installed with Git for Windows) so <code>echo</code>, <code>cat</code> and <code>&gt;&gt;</code> behave as shown. Your ticks are saved in this browser.</aside>
+
+<section id="l1" class="lab c1">
+  <h2>Account and SSH</h2>
+  <p class="meta"><span>20 min</span><span>Skill: setup</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Create a free Bitbucket Cloud account and a workspace.</label></li>
+    <li><label><input type="checkbox"> Set your identity.</label>
+<pre>git config --global user.name "Your Name"
+git config --global user.email "you@example.com"</pre></li>
+    <li><label><input type="checkbox"> Make an SSH key and copy the public part.</label>
+<pre>ssh-keygen -t ed25519 -C "you@example.com"
+cat ~/.ssh/id_ed25519.pub</pre></li>
+    <li><label><input type="checkbox"> In Bitbucket personal settings, open SSH keys and add it. Then test:</label>
+<pre>ssh -T git@bitbucket.org</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> a message that you are authenticated, with your username.</div>
+  <div class="fix"><b>If it fails:</b> <code>Permission denied (publickey)</code> means the key was not added, or you pasted the private file. Paste only the <code>.pub</code> text.</div>
+</section>
+
+<section id="l2" class="lab c2">
+  <h2>First repo: create, clone, commit, push</h2>
+  <p class="meta"><span>20 min</span><span>Skill: core loop</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> In Bitbucket choose Create, then Repository. Name it <code>git-practice</code>, private, and add a README.</label></li>
+    <li><label><input type="checkbox"> Clone it.</label>
+<pre>git clone git@bitbucket.org:WORKSPACE/git-practice.git
+cd git-practice</pre></li>
+    <li><label><input type="checkbox"> Create <code>notes.txt</code> with the single line <code>line 1: hello</code>, then commit and push.</label>
+<pre>git status
+git add notes.txt
+git commit -m "Add notes file"
+git push
+git log --oneline</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> <code>notes.txt</code> on the Bitbucket Source page, and your commit under Commits.</div>
+  <div class="fix"><b>If it fails:</b> <code>rejected</code> means the remote has newer commits, so run <code>git pull</code> first.</div>
+</section>
+
+<section id="l3" class="lab c3">
+  <h2>Branches: create, publish, delete</h2>
+  <p class="meta"><span>15 min</span><span>Skill: branching</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Create and publish a branch.</label>
+<pre>git switch -c feature/test-branch
+echo "line 2: from branch" >> notes.txt
+git commit -am "Add line 2"
+git push -u origin feature/test-branch</pre></li>
+    <li><label><input type="checkbox"> Check it in Bitbucket under Branches, then go back and delete it everywhere.</label>
+<pre>git switch main
+git branch -D feature/test-branch
+git push origin --delete feature/test-branch
+git branch -a</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> the branch gone from <code>git branch -a</code> and from Bitbucket.</div>
+  <div class="fix"><b>If it fails:</b> <code>Cannot delete branch checked out</code> means you are still standing on it. Switch to <code>main</code> first.</div>
+</section>
+
+<section id="l4" class="lab c4">
+  <h2>Pull request: the full cycle</h2>
+  <p class="meta"><span>25 min</span><span>Skill: pull requests</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Make a branch with a real change and push it.</label>
+<pre>git switch -c feature/add-greeting
+echo "greeting: welcome" >> notes.txt
+git commit -am "Add greeting"
+git push -u origin feature/add-greeting</pre></li>
+    <li><label><input type="checkbox"> In Bitbucket, click Create pull request. Check source and destination (<code>main</code>), write a title and a description (what and why), and create it.</label></li>
+    <li><label><input type="checkbox"> Open the Diff tab and add an inline comment on a line, as a reviewer would.</label></li>
+    <li><label><input type="checkbox"> Push one more commit to the same branch and watch the pull request update.</label>
+<pre>echo "greeting: thanks" >> notes.txt
+git commit -am "Address review comment"
+git push</pre></li>
+    <li><label><input type="checkbox"> Merge it with Close source branch ticked, then clean up locally.</label>
+<pre>git switch main
+git pull
+git branch -d feature/add-greeting</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> a Merged status, and both commits on <code>main</code> in <code>git log --oneline</code>.</div>
+  <div class="fix"><b>Note:</b> on a one-person account you may not be able to approve your own pull request. Merge it yourself if the Merge button is active.</div>
+</section>
+
+<section id="l5" class="lab c5">
+  <h2>Merge conflict with a "teammate"</h2>
+  <p class="meta"><span>30 min</span><span>Skill: conflicts</span></p>
+  <p>Clone the repo twice so you can play two developers.</p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Clone into two folders.</label>
+<pre>git clone git@bitbucket.org:WORKSPACE/git-practice.git dev-a
+git clone git@bitbucket.org:WORKSPACE/git-practice.git dev-b</pre></li>
+    <li><label><input type="checkbox"> In <code>dev-a</code>: change line 1 of <code>notes.txt</code> to <code>line 1: from A</code>, commit, and push straight to main.</label>
+<pre>cd dev-a
+git commit -am "A edits line 1"
+git push</pre></li>
+    <li><label><input type="checkbox"> In <code>dev-b</code> (do not pull yet): change the same line to <code>line 1: from B</code> and commit.</label>
+<pre>cd ../dev-b
+git commit -am "B edits line 1"
+git pull</pre></li>
+    <li><label><input type="checkbox"> Git reports a conflict. Open <code>notes.txt</code>, keep a final version such as <code>line 1: from A and B</code>, and delete the three marker lines.</label></li>
+    <li><label><input type="checkbox"> Finish the merge.</label>
+<pre>git add notes.txt
+git commit
+git push</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> <code>git log --oneline --graph</code> showing a merge commit, and clean text with no <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> in the file.</div>
+  <div class="fix"><b>Panic button:</b> <code>git merge --abort</code> returns you to before the pull. Repeat the lab until you can do it without notes.</div>
+</section>
+
+<section id="l6" class="lab c6">
+  <h2>Conflict inside a pull request</h2>
+  <p class="meta"><span>30 min</span><span>Skill: real team flow</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> In <code>dev-a</code>: new branch <code>feature/a2</code>, edit line 2 to <code>from A2</code>, push, and open a pull request.</label></li>
+    <li><label><input type="checkbox"> In <code>dev-b</code>: new branch <code>feature/b2</code>, edit the same line to <code>from B2</code>, push, and open a pull request.</label></li>
+    <li><label><input type="checkbox"> Merge the A2 pull request in Bitbucket. The B2 pull request now shows conflicts.</label></li>
+    <li><label><input type="checkbox"> In <code>dev-b</code>, bring main into your branch and fix it.</label>
+<pre>git switch feature/b2
+git pull origin main
+# resolve the conflict in the file
+git add .
+git commit
+git push</pre></li>
+    <li><label><input type="checkbox"> Refresh the B2 pull request and merge it.</label></li>
+  </ol>
+  <div class="see"><b>You should see:</b> the conflict warning disappears from the pull request after your push.</div>
+</section>
+
+<section id="l7" class="lab c1">
+  <h2>Undo toolkit</h2>
+  <p class="meta"><span>30 min</span><span>Skill: fixing mistakes</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Discard a bad edit and unstage a file.</label>
+<pre>echo "oops" >> notes.txt
+git restore notes.txt            # edit discarded
+echo "oops" >> notes.txt
+git add notes.txt
+git restore --staged notes.txt   # unstaged, edit still there
+git restore notes.txt            # now discard it</pre></li>
+    <li><label><input type="checkbox"> Fix a commit message you have not pushed.</label>
+<pre>git commit --allow-empty -m "typo mesage"
+git commit --amend -m "Fix message typo"</pre></li>
+    <li><label><input type="checkbox"> Undo a pushed commit safely with revert.</label>
+<pre>echo "bad line" >> notes.txt
+git commit -am "Bad change" &amp;&amp; git push
+git revert HEAD
+git push</pre></li>
+    <li><label><input type="checkbox"> Stash half-done work, switch away, and restore it.</label>
+<pre>echo "wip" >> notes.txt
+git stash
+git switch -c temp
+git switch main
+git stash pop</pre></li>
+    <li><label><input type="checkbox"> Delete a local commit with a hard reset, then recover it with reflog.</label>
+<pre>git commit --allow-empty -m "precious"
+git reset --hard HEAD~1
+git reflog
+git reset --hard HEAD@{1}</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> your "precious" commit coming back after the last step.</div>
+  <div class="fix"><b>Remember:</b> never use <code>reset --hard</code> on shared branches. Use <code>revert</code> there.</div>
+</section>
+
+<section id="l8" class="lab c2">
+  <h2>Versioning: tags and releases</h2>
+  <p class="meta"><span>25 min</span><span>Skill: versioning</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Turn the repo into a Node project and commit.</label>
+<pre>npm init -y
+git add . &amp;&amp; git commit -m "Add package.json" &amp;&amp; git push</pre></li>
+    <li><label><input type="checkbox"> Create versions the semantic way: patch for a fix, minor for a feature.</label>
+<pre>npm version patch -m "Release %s"
+npm version minor -m "Release %s"</pre></li>
+    <li><label><input type="checkbox"> Push the commits and tags together, then list them.</label>
+<pre>git push --follow-tags
+git tag
+git log --oneline --decorate</pre></li>
+    <li><label><input type="checkbox"> Create a manual annotated tag, view the old code, and return.</label>
+<pre>git tag -a v2.0.0 -m "Breaking change release"
+git push origin v2.0.0
+git switch --detach v1.0.1
+git switch main</pre></li>
+  </ol>
+  <div class="see"><b>You should see:</b> tags such as <code>v1.0.1</code> and <code>v1.1.0</code> in Bitbucket under Branches, then Tags.</div>
+  <div class="fix"><b>If it fails:</b> <code>npm version</code> needs a clean working tree, so commit or stash first.</div>
+</section>
+
+<section id="l9" class="lab c3">
+  <h2>Pipelines: automatic tests on every push</h2>
+  <p class="meta"><span>40 min</span><span>Skill: CI</span></p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Add code and a test.</label>
+<pre>echo "module.exports = (a, b) => a + b;" > index.js
+echo "const assert = require('assert'); const add = require('./index'); assert.strictEqual(add(2, 3), 5); console.log('tests passed');" > test.js
+npm pkg set scripts.test="node test.js"
+npm test</pre></li>
+    <li><label><input type="checkbox"> Create <code>bitbucket-pipelines.yml</code> in the repo root with this content.</label>
+<pre>image: node:20
+pipelines:
+  default:
+    - step:
+        name: Test
+        script:
+          - npm test</pre></li>
+    <li><label><input type="checkbox"> In Bitbucket, open Repository settings, then Pipelines, and enable Pipelines. Then push.</label>
+<pre>git add . &amp;&amp; git commit -m "Add tests and pipeline" &amp;&amp; git push</pre></li>
+    <li><label><input type="checkbox"> Open the Pipelines page and watch the build go green.</label></li>
+    <li><label><input type="checkbox"> Break the test on purpose (change <code>5</code> to <code>6</code>), push, and watch it fail. Read the log, fix it, push again.</label></li>
+  </ol>
+  <div class="see"><b>You should see:</b> a green tick for the good commit and a red cross with a readable error for the broken one.</div>
+  <div class="fix"><b>Note:</b> the free plan has a limited number of build minutes per month. Check the current limit in your workspace billing page.</div>
+</section>
+
+<section id="l10" class="lab c4">
+  <h2>Deploy stages and the capstone</h2>
+  <p class="meta"><span>60 min</span><span>Skill: deployment and full flow</span></p>
+  <p>Part A adds staging and production stages. The deploy steps only print a message, which is how the structure works. A real deploy replaces the <code>echo</code> with an upload or a deploy command.</p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Replace the pipeline file with this one and push to main.</label>
+<pre>image: node:20
+pipelines:
+  default:
+    - step:
+        name: Test
+        script:
+          - npm test
+  branches:
+    main:
+      - step:
+          name: Test
+          script:
+            - npm test
+      - step:
+          name: Deploy to staging
+          deployment: staging
+          script:
+            - echo "Deploying build $BITBUCKET_BUILD_NUMBER to staging"
+      - step:
+          name: Deploy to production
+          deployment: production
+          trigger: manual
+          script:
+            - echo "Deploying to production"</pre></li>
+    <li><label><input type="checkbox"> Open the pipeline. Staging runs by itself. Production waits, so click Run on it.</label></li>
+    <li><label><input type="checkbox"> Open Deployments in the repo menu and see which build is in each environment.</label></li>
+  </ol>
+  <div class="fix"><b>Real deployments:</b> store keys as secured repository variables (Repository settings, then Repository variables). Never put passwords or keys in the YAML file or the code.</div>
+  <p><b>Part B: capstone (a day on the job).</b> Do all of this without looking at notes:</p>
+  <ol class="steps">
+    <li><label><input type="checkbox"> Pretend a ticket says "multiply function missing". Create <code>feature/PROJ-1-multiply</code> from latest main.</label></li>
+    <li><label><input type="checkbox"> Add the function and a test in two small commits with clear messages.</label></li>
+    <li><label><input type="checkbox"> Push, open a pull request with a good description, and check the pipeline is green.</label></li>
+    <li><label><input type="checkbox"> Make a conflicting change in your second clone, merge it first, and resolve the conflict in your branch.</label></li>
+    <li><label><input type="checkbox"> Merge, delete the branch, tag <code>v1.2.0</code>, push the tag, and promote to production.</label></li>
+  </ol>
+</section>
+
+<section id="done" class="c5">
+  <h2>Confidence check</h2>
+  <p>You are ready for a team repo when you can do each of these without notes:</p>
+  <ul class="check">
+    <li>Clone, branch, commit, push and open a pull request.</li>
+    <li>Resolve a conflict, locally and in a pull request.</li>
+    <li>Undo a mistake with restore, amend, revert, stash or reflog, and explain which is safe on shared branches.</li>
+    <li>Tag a release with semantic versioning.</li>
+    <li>Read a failed pipeline log and fix the cause.</li>
+    <li>Explain merge vs rebase, and revert vs reset, out loud.</li>
+  </ul>
+  <aside class="note tip">Repeat labs 5 and 6 once a week until they feel boring. Boring means you are ready.</aside>
+</section>
+</main>
+</div>
+<footer>Practice on throwaway repos only. Bitbucket menus and plan limits change, so check their docs if a screen looks different.</footer>
+<script>
+(function () {
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  function update() {
+    var n = boxes.filter(function (b) { return b.checked; }).length;
+    document.getElementById('pc').textContent = n + ' of ' + boxes.length + ' steps done';
+    document.getElementById('bar').style.width = (100 * n / boxes.length) + '%';
+  }
+  boxes.forEach(function (b, i) {
+    try { b.checked = localStorage.getItem('gitlab' + i) === '1'; } catch (e) {}
+    b.addEventListener('change', function () {
+      try { localStorage.setItem('gitlab' + i, b.checked ? '1' : '0'); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+</body>
+</html>

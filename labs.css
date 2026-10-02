@@ -1,0 +1,20 @@
+.prog { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 8px 20px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 0.85rem; color: var(--mute); }
+.prog .track { flex: 1; height: 8px; background: var(--inline); border-radius: 8px; overflow: hidden; }
+#bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--b2), var(--b6)); transition: width 0.3s; }
+.toc { top: 40px; }
+.toc .back { margin: 16px 10px 0; font-size: 0.9rem; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 14px; }
+.meta span { background: color-mix(in srgb, var(--c) 14%, var(--surface)); color: var(--c); border-radius: 20px; padding: 2px 12px; font-size: 0.8rem; font-weight: 600; }
+.steps label { cursor: pointer; display: block; }
+.steps input { width: 17px; height: 17px; margin: 0 8px 0 0; vertical-align: -3px; accent-color: var(--c); }
+.steps input:checked + * { opacity: 0.6; }
+.see, .fix { margin: 12px 0; padding: 10px 14px; border-radius: 6px; font-size: 0.93rem; max-width: 80ch; }
+.see { background: color-mix(in srgb, var(--b6) 13%, var(--surface)); border-left: 4px solid var(--b6); }
+.see b { color: var(--b6); }
+.fix { background: color-mix(in srgb, var(--b4) 13%, var(--surface)); border-left: 4px solid var(--b4); }
+.fix b { color: var(--b4); }
+.check { list-style: none; padding: 0; }
+.check li { padding-left: 30px; position: relative; }
+.check li::before { content: "\2713"; position: absolute; left: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--b6); color: #fff; font-size: 0.8rem; display: grid; place-items: center; top: 3px; }
+@media (max-width: 860px) { .toc { top: 0; } }
+.toc .back a::before { content: none; }
